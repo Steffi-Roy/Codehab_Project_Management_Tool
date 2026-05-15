@@ -32,8 +32,9 @@ export interface Project {
   cover_image_url: string | null
   github_url: string
   video_url: string | null
-  tag: 'Tool' | 'Design' | 'Community' | 'Other'
+  tag: string
   collab_open: boolean
+  consider_for_voting: boolean
   created_at: string
   users?: User
   weeks?: Week

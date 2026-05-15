@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { GitBranch, Video, ExternalLink, ChevronUp } from 'lucide-react'
+import { GitBranch, Video, ChevronUp } from 'lucide-react'
 import AvatarChip from './AvatarChip'
 import { Project } from '@/types'
 import { createClient } from '@/lib/supabase/client'
@@ -15,28 +15,20 @@ interface ProjectCardProps {
   onAvatarClick?: (userId: string) => void
 }
 
-const TAG_COLORS: Record<string, string> = {
-  Tool: 'bg-[#EEEDFE] text-[#3C3489]',
-  Design: 'bg-[#FBEAF0] text-[#72243E]',
-  Community: 'bg-[#E1F5EE] text-[#085041]',
-  Other: 'bg-[#FAEEDA] text-[#633806]',
-}
-
 export default function ProjectCard({ project, currentUserId, onVoteChange, onClick, onAuthRequired, onAvatarClick }: ProjectCardProps) {
   const [voteCount, setVoteCount] = useState(project.vote_count ?? 0)
   const [voted, setVoted] = useState(project.user_voted ?? false)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
+  const canVote = project.consider_for_voting !== false
+
   async function handleVote(e: React.MouseEvent) {
     e.stopPropagation()
-    if (!currentUserId) {
-      onAuthRequired?.()
-      return
-    }
+    if (!canVote) return
+    if (!currentUserId) { onAuthRequired?.(); return }
     if (loading) return
     setLoading(true)
-
     if (voted) {
       await supabase.from('votes').delete().match({ project_id: project.id, user_id: currentUserId })
       setVoteCount((c) => c - 1)
@@ -90,14 +82,11 @@ export default function ProjectCard({ project, currentUserId, onVoteChange, onCl
         {/* Description */}
         <p className="text-xs line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>{project.description}</p>
 
-        {/* Tags */}
+        {/* Tag */}
         <div className="flex items-center gap-1 mb-3 flex-wrap">
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-            {project.tag}
-          </span>
-          {project.collab_open && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#E1F5EE', color: '#085041' }}>
-              Collab open
+          {project.tag && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+              {project.tag}
             </span>
           )}
         </div>
@@ -114,18 +103,24 @@ export default function ProjectCard({ project, currentUserId, onVoteChange, onCl
               </a>
             )}
           </div>
-          <button
-            onClick={handleVote}
-            disabled={loading}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors"
-            style={voted
-              ? { backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }
-              : { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }
-            }
-          >
-            <ChevronUp size={12} />
-            {voteCount}
-          </button>
+
+          {canVote ? (
+            <button
+              onClick={handleVote}
+              disabled={loading}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors"
+              style={voted
+                ? { backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }
+                : { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}
+            >
+              <ChevronUp size={12} />
+              {voteCount}
+            </button>
+          ) : (
+            <span className="text-xs px-2 py-1 rounded-lg" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
+              Not in voting
+            </span>
+          )}
         </div>
       </div>
     </div>

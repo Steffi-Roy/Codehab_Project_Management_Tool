@@ -22,7 +22,7 @@ export default function SubmitPage() {
   const [githubUrl, setGithubUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [tags, setTags] = useState<string[]>(['Tool'])
-  const [collabOpen, setCollabOpen] = useState(false)
+  const [considerForVoting, setConsiderForVoting] = useState(true)
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [coverTab, setCoverTab] = useState<'upload' | 'ai'>('upload')
   const [polishing, setPolishing] = useState(false)
@@ -106,7 +106,6 @@ export default function SubmitPage() {
     e.preventDefault()
     if (!currentUser) { setShowEmailPrompt(true); return }
     if (!activeWeek) { setError('No active week found'); return }
-    if (!coverImageUrl) { setError('Please add a cover image'); return }
     if (!githubUrl.includes('github.com')) { setError('Please enter a valid GitHub URL'); return }
 
     setSubmitting(true)
@@ -116,9 +115,9 @@ export default function SubmitPage() {
     const { error: insertError } = await supabase.from('projects').insert({
       user_id: currentUser.id,
       week_id: activeWeek.id,
-      title, description, cover_image_url: coverImageUrl,
+      title, description, cover_image_url: coverImageUrl || null,
       github_url: githubUrl, video_url: videoUrl || null,
-      tag, collab_open: collabOpen,
+      tag, collab_open: false, consider_for_voting: considerForVoting,
     }).select().single()
 
     if (insertError) { setError(insertError.message); setSubmitting(false); return }
@@ -129,7 +128,8 @@ export default function SubmitPage() {
     id: 'preview', user_id: currentUser?.id || '', week_id: activeWeek?.id || '',
     title: title || 'Your project title', description: description || 'Your project description will appear here.',
     cover_image_url: coverImageUrl || null, github_url: githubUrl || 'https://github.com',
-    video_url: videoUrl || null, tag: (tags[0] || 'Tool') as 'Tool' | 'Design' | 'Community' | 'Other', collab_open: collabOpen, created_at: new Date().toISOString(),
+    video_url: videoUrl || null, tag: tags[0] || 'Tool', collab_open: false,
+    consider_for_voting: considerForVoting, created_at: new Date().toISOString(),
     users: currentUser ?? undefined, weeks: activeWeek ?? undefined, vote_count: 0, user_voted: false,
   }
 
@@ -281,17 +281,20 @@ export default function SubmitPage() {
               colour="purple"
             />
 
-            {/* Collab toggle */}
+            {/* Consider for voting toggle */}
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setCollabOpen((v) => !v)}
-                className="w-10 h-6 rounded-full transition-colors relative"
-                style={{ backgroundColor: collabOpen ? '#5DCAA5' : 'var(--bg-surface)', border: '0.5px solid var(--border)' }}>
+              <button type="button" onClick={() => setConsiderForVoting((v) => !v)}
+                className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
+                style={{ backgroundColor: considerForVoting ? '#5DCAA5' : 'var(--bg-surface)', border: '0.5px solid var(--border)' }}>
                 <span
                   className="absolute top-1 w-4 h-4 rounded-full shadow transition-transform"
-                  style={{ backgroundColor: 'var(--bg-card)', transform: collabOpen ? 'translateX(20px)' : 'translateX(4px)' }}
+                  style={{ backgroundColor: 'var(--bg-card)', transform: considerForVoting ? 'translateX(20px)' : 'translateX(4px)' }}
                 />
               </button>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Open to collaborators</span>
+              <div>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Consider for voting</span>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Uncheck to share without entering the vote</p>
+              </div>
             </div>
 
             {error && <p className="text-sm" style={{ color: '#ED93B1' }}>{error}</p>}

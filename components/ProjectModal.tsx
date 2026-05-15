@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, GitBranch, Video, ChevronUp, Send } from 'lucide-react'
+import { useState } from 'react'
+import { X, GitBranch, Video, ChevronUp } from 'lucide-react'
 import AvatarChip from './AvatarChip'
-import { Project, Comment, User } from '@/types'
+import { Project, User } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 
 interface ProjectModalProps {
@@ -14,26 +14,15 @@ interface ProjectModalProps {
 }
 
 export default function ProjectModal({ project, currentUser, onClose, onAuthRequired }: ProjectModalProps) {
-  const [comments, setComments] = useState<Comment[]>([])
-  const [newComment, setNewComment] = useState('')
   const [voteCount, setVoteCount] = useState(project.vote_count ?? 0)
   const [voted, setVoted] = useState(project.user_voted ?? false)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    async function loadComments() {
-      const { data } = await supabase
-        .from('comments')
-        .select('*, users(*)')
-        .eq('project_id', project.id)
-        .order('created_at', { ascending: true })
-      if (data) setComments(data as Comment[])
-    }
-    loadComments()
-  }, [project.id])
+  const canVote = project.consider_for_voting !== false
 
   async function handleVote() {
+    if (!canVote) return
     if (!currentUser) { onAuthRequired?.(); return }
     if (loading) return
     setLoading(true)
@@ -47,21 +36,6 @@ export default function ProjectModal({ project, currentUser, onClose, onAuthRequ
       setVoted(true)
     }
     setLoading(false)
-  }
-
-  async function handleComment(e: React.FormEvent) {
-    e.preventDefault()
-    if (!currentUser) { onAuthRequired?.(); return }
-    if (!newComment.trim()) return
-    const { data } = await supabase
-      .from('comments')
-      .insert({ project_id: project.id, user_id: currentUser.id, text: newComment.trim() })
-      .select('*, users(*)')
-      .single()
-    if (data) {
-      setComments((prev) => [...prev, data as Comment])
-      setNewComment('')
-    }
   }
 
   function getVideoEmbed(url: string) {
@@ -101,29 +75,30 @@ export default function ProjectModal({ project, currentUser, onClose, onAuthRequ
           <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{project.title}</h2>
-              <div className="flex items-center gap-2">
+              {project.tag && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                   {project.tag}
                 </span>
-                {project.collab_open && (
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#E1F5EE', color: '#085041' }}>
-                    Collab open
-                  </span>
-                )}
-              </div>
+              )}
             </div>
-            <button
-              onClick={handleVote}
-              disabled={loading}
-              className="flex items-center gap-1 px-4 py-2 rounded-xl font-medium transition-colors"
-              style={voted
-                ? { backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }
-                : { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }
-              }
-            >
-              <ChevronUp size={16} />
-              {voteCount}
-            </button>
+
+            {canVote ? (
+              <button
+                onClick={handleVote}
+                disabled={loading}
+                className="flex items-center gap-1 px-4 py-2 rounded-xl font-medium transition-colors"
+                style={voted
+                  ? { backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }
+                  : { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}
+              >
+                <ChevronUp size={16} />
+                {voteCount}
+              </button>
+            ) : (
+              <span className="text-xs px-3 py-2 rounded-xl" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
+                Not in voting
+              </span>
+            )}
           </div>
 
           {/* Description */}
@@ -154,7 +129,7 @@ export default function ProjectModal({ project, currentUser, onClose, onAuthRequ
 
           {/* Builder */}
           {user && (
-            <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: 'var(--accent-bg)' }}>
+            <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--accent-bg)' }}>
               <h3 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--accent-text)' }}>Builder</h3>
               <div className="flex items-start gap-3">
                 <AvatarChip name={user.display_name} color={user.avatar_color} size="lg" />
@@ -176,37 +151,6 @@ export default function ProjectModal({ project, currentUser, onClose, onAuthRequ
               </div>
             </div>
           )}
-
-          {/* Comments */}
-          <div>
-            <h3 className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Comments</h3>
-            <div className="space-y-3 mb-4">
-              {comments.length === 0 && (
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No comments yet. Be the first!</p>
-              )}
-              {comments.map((c) => (
-                <div key={c.id} className="flex gap-3">
-                  {c.users && <AvatarChip name={c.users.display_name} color={c.users.avatar_color} size="sm" />}
-                  <div>
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{c.users?.display_name}</span>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{c.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleComment} className="flex gap-2">
-              <input
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment…"
-                className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none"
-                style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
-              />
-              <button type="submit" className="px-3 py-2 rounded-xl transition-colors" style={{ backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }}>
-                <Send size={14} />
-              </button>
-            </form>
-          </div>
         </div>
       </div>
     </div>

@@ -36,6 +36,7 @@ function AddProjectModal({
   const [tags, setTags] = useState<string[]>([])
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [coverTab, setCoverTab] = useState<'upload' | 'ai'>('upload')
+  const [considerForVoting, setConsiderForVoting] = useState(true)
   const [polishing, setPolishing] = useState(false)
   const [polishedText, setPolishedText] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -107,6 +108,7 @@ function AddProjectModal({
         video_url: videoUrl || null,
         tag: tags[0] || 'Other',
         collab_open: false,
+        consider_for_voting: considerForVoting,
       })
       .select('*, users(*), weeks(*)')
       .single()
@@ -287,6 +289,25 @@ function AddProjectModal({
             placeholder="Pick or type a tag…"
             colour="purple"
           />
+
+          {/* Consider for voting */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setConsiderForVoting((v) => !v)}
+              className="w-10 h-6 rounded-full transition-colors relative flex-shrink-0"
+              style={{ backgroundColor: considerForVoting ? '#5DCAA5' : 'var(--bg-surface)', border: '0.5px solid var(--border)' }}
+            >
+              <span
+                className="absolute top-1 w-4 h-4 rounded-full shadow transition-transform"
+                style={{ backgroundColor: 'var(--bg-card)', transform: considerForVoting ? 'translateX(20px)' : 'translateX(4px)' }}
+              />
+            </button>
+            <div>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Consider for voting</span>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Uncheck to share without entering the vote</p>
+            </div>
+          </div>
 
           {error && <p className="text-xs" style={{ color: '#ED93B1' }}>{error}</p>}
 
