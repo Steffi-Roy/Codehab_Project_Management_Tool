@@ -34,16 +34,7 @@ export default function CalendarSidebar({ weeks, userId, onAuthRequired }: Calen
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
-  function isVotingDay(day: number) {
-    return weeks.some((w) => {
-      const open = new Date(w.voting_open)
-      const close = new Date(w.voting_close)
-      const d = new Date(year, month, day)
-      return d >= open && d <= close
-    })
-  }
-
-  function isStandupDay(day: number) {
+  function isSubmissionDay(day: number) {
     return weeks.some((w) => {
       const deadline = new Date(w.submission_deadline)
       return deadline.getFullYear() === year && deadline.getMonth() === month && deadline.getDate() === day
@@ -112,15 +103,12 @@ export default function CalendarSidebar({ weeks, userId, onAuthRequired }: Calen
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1
             const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year
-            const voting = isVotingDay(day)
-            const standup = isStandupDay(day)
+            const submission = isSubmissionDay(day)
             let style: React.CSSProperties = { color: 'var(--text-secondary)' }
             if (isToday) {
               style = { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', fontWeight: 600 }
-            } else if (standup) {
-              style = { backgroundColor: '#E1F5EE', color: '#085041' }
-            } else if (voting) {
-              style = { backgroundColor: '#FAEEDA', color: '#633806' }
+            } else if (submission) {
+              style = { backgroundColor: '#E1F5EE', color: '#085041', fontWeight: 600 }
             }
             return (
               <div key={day} className="text-center text-xs py-1 rounded-md font-medium" style={style}>
@@ -130,9 +118,8 @@ export default function CalendarSidebar({ weeks, userId, onAuthRequired }: Calen
           })}
         </div>
 
-        <div className="mt-3 flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: '#5DCAA5' }} /> Standup</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: '#EF9F27' }} /> Voting</span>
+        <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: '#5DCAA5' }} /> Submission deadline</span>
         </div>
       </div>
 
