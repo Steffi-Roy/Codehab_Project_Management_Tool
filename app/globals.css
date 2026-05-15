@@ -60,6 +60,11 @@ body {
 
 /* ── Utility ───────────────────────────────────────── */
 
+@keyframes popIn  { 0% { transform: scale(0.8); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+@keyframes float  { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+@keyframes fadeUp { 0% { transform: translateY(16px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
+@keyframes fadeIn { 0% { opacity: 0 } 100% { opacity: 1 } }
+
 .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
 .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }

@@ -8,6 +8,7 @@ import EmailPrompt from '@/components/EmailPrompt'
 import ProjectCard from '@/components/ProjectCard'
 import TagInput from '@/components/TagInput'
 import { createClient } from '@/lib/supabase/client'
+import SubmitSuccess from '@/components/SubmitSuccess'
 import { User, Week, Project } from '@/types'
 
 const TAG_SUGGESTIONS = ['Tool', 'Community', 'Design', 'AI', 'Mobile', 'API', 'Open source', 'SaaS']
@@ -30,6 +31,7 @@ export default function SubmitPage() {
   const [generating, setGenerating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [submittedTitle, setSubmittedTitle] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
@@ -121,7 +123,7 @@ export default function SubmitPage() {
     }).select().single()
 
     if (insertError) { setError(insertError.message); setSubmitting(false); return }
-    router.push('/')
+    setSubmittedTitle(title)
   }
 
   const previewProject: Project = {
@@ -317,6 +319,7 @@ export default function SubmitPage() {
       </main>
 
       {showEmailPrompt && <EmailPrompt onClose={() => setShowEmailPrompt(false)} onSuccess={() => setShowEmailPrompt(false)} />}
+      {submittedTitle && <SubmitSuccess projectTitle={submittedTitle} onDismiss={() => router.push('/')} />}
     </>
   )
 }

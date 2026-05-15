@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Edit2, Check, Plus, Trash2, ArrowRight, X, Upload, RefreshCw, Sparkles } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import EmailPrompt from '@/components/EmailPrompt'
 import ProjectCard from '@/components/ProjectCard'
 import TagInput from '@/components/TagInput'
+import SubmitSuccess from '@/components/SubmitSuccess'
 import { createClient } from '@/lib/supabase/client'
 import { User, Project, Week, Task } from '@/types'
 
@@ -18,11 +18,13 @@ const TAG_SUGGESTIONS = ['Tool', 'Community', 'Design', 'AI', 'Mobile', 'API', '
 function AddProjectModal({
   currentUser,
   activeWeek,
+  activeWeekProjectExists,
   onClose,
   onCreated,
 }: {
   currentUser: User
   activeWeek: Week
+  activeWeekProjectExists: boolean
   onClose: () => void
   onCreated: (project: Project) => void
 }) {
@@ -42,6 +44,7 @@ function AddProjectModal({
   const [generating, setGenerating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [submittedProject, setSubmittedProject] = useState<Project | null>(null)
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -92,6 +95,7 @@ function AddProjectModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (activeWeekProjectExists) { setError(`You've already submitted a project for Week ${activeWeek.number}. You can edit it from your projects list.`); return }
     if (!githubUrl.includes('github.com')) { setError('Please enter a valid GitHub URL'); return }
     setSubmitting(true)
     setError('')
@@ -114,8 +118,16 @@ function AddProjectModal({
       .single()
 
     if (insertError) { setError(insertError.message); setSubmitting(false); return }
-    onCreated(data as Project)
-    onClose()
+    setSubmittedProject(data as Project)
+  }
+
+  if (submittedProject) {
+    return (
+      <SubmitSuccess
+        projectTitle={submittedProject.title}
+        onDismiss={() => { onCreated(submittedProject); onClose() }}
+      />
+    )
   }
 
   return (
@@ -333,10 +345,125 @@ function AddProjectModal({
   )
 }
 
+// ── Edit Project Modal ───────────────────────────────────────────────────────
+
+function EditProjectModal({
+  project,
+  onClose,
+  onUpdated,
+}: {
+  project: Project
+  onClose: () => void
+  onUpdated: (project: Project) => void
+}) {
+  const supabase = createClient()
+  const [title, setTitle] = useState(project.title)
+  const [description, setDescription] = useState(project.description)
+  const [githubUrl, setGithubUrl] = useState(project.github_url)
+  const [videoUrl, setVideoUrl] = useState(project.video_url ?? '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!githubUrl.includes('github.com')) { setError('Please enter a valid GitHub URL'); return }
+    setSaving(true)
+    setError('')
+    const { data, error: updateError } = await supabase
+      .from('projects')
+      .update({ title, description, github_url: githubUrl, video_url: videoUrl || null })
+      .eq('id', project.id)
+      .select('*, users(*), weeks(*)')
+      .single()
+    if (updateError) { setError(updateError.message); setSaving(false); return }
+    onUpdated(data as Project)
+    onClose()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
+        style={{ backgroundColor: 'var(--bg-card)', border: '0.5px solid var(--border)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '0.5px solid var(--border)' }}>
+          <h2 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Edit project</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
+            <X size={16} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Title *</label>
+            <input
+              value={title} onChange={(e) => setTitle(e.target.value)} required
+              className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none"
+              style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Description *</label>
+              <span className="text-xs" style={{ color: description.trim().split(/\s+/).filter(Boolean).length > 190 ? '#ED93B1' : 'var(--text-muted)' }}>
+                {description.trim().split(/\s+/).filter(Boolean).length} / 200 words
+              </span>
+            </div>
+            <textarea
+              value={description}
+              onChange={(e) => {
+                const words = e.target.value.trim().split(/\s+/).filter(Boolean)
+                if (words.length <= 200) setDescription(e.target.value)
+                else setDescription(words.slice(0, 200).join(' '))
+              }}
+              required rows={4}
+              className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none resize-none"
+              style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>GitHub URL *</label>
+            <input
+              value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} required
+              className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none"
+              style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Video URL <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+            <input
+              value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://youtube.com/watch?v=…"
+              className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none"
+              style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
+            />
+          </div>
+          {error && <p className="text-xs" style={{ color: '#ED93B1' }}>{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="submit" disabled={saving}
+              className="flex-1 py-2.5 rounded-xl font-medium text-sm disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }}>
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+            <button type="button" onClick={onClose}
+              className="px-4 py-2.5 rounded-xl text-sm"
+              style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface)' }}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MyProjectPage() {
-  const router = useRouter()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [weeks, setWeeks] = useState<Week[]>([])
@@ -345,6 +472,7 @@ export default function MyProjectPage() {
   const [taskError, setTaskError] = useState('')
   const [showEmailPrompt, setShowEmailPrompt] = useState(false)
   const [showAddProject, setShowAddProject] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -453,6 +581,7 @@ export default function MyProjectPage() {
 
   const activeWeek = weeks.find((w) => w.is_active) ?? weeks[weeks.length - 1]
   const votingOpen = activeWeek ? new Date() < new Date(activeWeek.voting_close) : false
+  const hasActiveWeekProject = activeWeek ? projects.some((p) => p.week_id === activeWeek.id) : false
 
   const projectsByWeek = weeks.map((w) => ({
     week: w,
@@ -468,7 +597,7 @@ export default function MyProjectPage() {
         {/* Page header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-[22px] font-semibold" style={{ color: 'var(--text-primary)' }}>My Projects</h1>
-          {votingOpen && activeWeek && (
+          {votingOpen && activeWeek && !hasActiveWeekProject && (
             <button
               onClick={() => setShowAddProject(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -480,7 +609,7 @@ export default function MyProjectPage() {
         </div>
 
         {/* Submit CTA when no submission */}
-        {votingOpen && activeWeek && (
+        {votingOpen && activeWeek && !hasActiveWeekProject && (
           <div className="rounded-2xl p-7 mb-8 text-center" style={{ backgroundColor: '#E1F5EE', border: '0.5px solid #5DCAA5' }}>
             <p className="text-3xl mb-3">🌱</p>
             <h2 className="text-lg font-semibold mb-1" style={{ color: '#085041' }}>You haven't submitted yet this week</h2>
@@ -532,7 +661,7 @@ export default function MyProjectPage() {
                     <div className="flex items-center gap-2">
                       {isEditable(project) && (
                         <button
-                          onClick={() => router.push(`/submit?edit=${project.id}`)}
+                          onClick={() => setEditingProject(project)}
                           className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
                           style={{ color: 'var(--accent-text)', backgroundColor: 'var(--accent-bg)' }}
                         >
@@ -608,9 +737,22 @@ export default function MyProjectPage() {
         <AddProjectModal
           currentUser={currentUser}
           activeWeek={activeWeek}
+          activeWeekProjectExists={hasActiveWeekProject}
           onClose={() => setShowAddProject(false)}
           onCreated={(project) => {
             setProjects((prev) => [{ ...project, vote_count: 0, user_voted: false }, ...prev])
+            setShowAddProject(false)
+          }}
+        />
+      )}
+
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onUpdated={(updated) => {
+            setProjects((prev) => prev.map((p) => p.id === updated.id ? { ...updated, vote_count: p.vote_count, user_voted: p.user_voted } : p))
+            setEditingProject(null)
           }}
         />
       )}
