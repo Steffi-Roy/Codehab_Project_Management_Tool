@@ -6,7 +6,6 @@ import { ArrowRight } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import ProjectCard from '@/components/ProjectCard'
 import ProjectModal from '@/components/ProjectModal'
-import CalendarSidebar from '@/components/CalendarSidebar'
 import EmailPrompt from '@/components/EmailPrompt'
 import MemberProfileModal from '@/components/MemberProfileModal'
 import { createClient } from '@/lib/supabase/client'
@@ -118,8 +117,8 @@ export default function HomePage() {
         onAvatarClick={() => currentUser && setMemberModalUserId(currentUser.id)}
       />
 
-      <main className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
-        <div className="flex-1 min-w-0">
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        <div>
           {/* Week tabs */}
           <div className="relative mb-4">
             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -242,7 +241,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        <CalendarSidebar weeks={weeks} userId={currentUser?.id} onAuthRequired={() => setShowEmailPrompt(true)} />
       </main>
 
       {selectedProject && (
