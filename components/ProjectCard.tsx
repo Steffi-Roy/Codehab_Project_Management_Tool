@@ -108,9 +108,12 @@ export default function ProjectCard({ project, currentUserId, onVoteChange, onCl
             <button
               onClick={handleVote}
               disabled={loading}
+              title={!currentUserId ? 'Sign in to vote' : undefined}
               className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors"
               style={voted
                 ? { backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }
+                : !currentUserId
+                ? { backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)', border: '0.5px solid var(--border)' }
                 : { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}
             >
               <ChevronUp size={12} />

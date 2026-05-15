@@ -86,13 +86,16 @@ export default function ProjectModal({ project, currentUser, onClose, onAuthRequ
               <button
                 onClick={handleVote}
                 disabled={loading}
-                className="flex items-center gap-1 px-4 py-2 rounded-xl font-medium transition-colors"
+                title={!currentUser ? 'Sign in to vote' : undefined}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium transition-colors"
                 style={voted
                   ? { backgroundColor: 'var(--accent-text)', color: 'var(--bg-card)' }
+                  : !currentUser
+                  ? { backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)', border: '0.5px solid var(--border)' }
                   : { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}
               >
                 <ChevronUp size={16} />
-                {voteCount}
+                {voteCount}{!currentUser && <span className="text-xs font-normal ml-1">· Sign in to vote</span>}
               </button>
             ) : (
               <span className="text-xs px-3 py-2 rounded-xl" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
