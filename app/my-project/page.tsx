@@ -23,42 +23,39 @@ export default function MyProjectPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.is_anonymous) {
-        setLoading(false)
-        return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user && !session.user.is_anonymous) {
+        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single()
+        if (profile) {
+          setCurrentUser(profile as User)
+
+          const [{ data: projectsData }, { data: tasksData }] = await Promise.all([
+            supabase.from('projects').select('*, users(*), weeks(*)').eq('user_id', session.user.id).order('created_at', { ascending: false }),
+            supabase.from('tasks').select('*').eq('user_id', session.user.id).order('created_at'),
+          ])
+
+          if (projectsData) {
+            const ids = projectsData.map((p: Project) => p.id)
+            const { data: votes } = await supabase.from('votes').select('*').in('project_id', ids)
+            const enriched = projectsData.map((p: Project) => ({
+              ...p, vote_count: votes?.filter((v) => v.project_id === p.id).length ?? 0, user_voted: false,
+            }))
+            setProjects(enriched as Project[])
+          }
+          if (tasksData) setTasks(tasksData as Task[])
+        }
+      } else {
+        setCurrentUser(null)
       }
-
-      const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single()
-      if (!profile) { setLoading(false); return }
-      setCurrentUser(profile as User)
-
-      const [{ data: weeksData }, { data: projectsData }, { data: tasksData }] = await Promise.all([
-        supabase.from('weeks').select('*').order('number'),
-        supabase.from('projects').select('*, users(*), weeks(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('tasks').select('*').eq('user_id', user.id).order('created_at'),
-      ])
-
-      if (weeksData) setWeeks(weeksData as Week[])
-      if (projectsData) {
-        const ids = projectsData.map((p: Project) => p.id)
-        const { data: votes } = await supabase.from('votes').select('*').in('project_id', ids)
-        const enriched = projectsData.map((p: Project) => ({
-          ...p, vote_count: votes?.filter((v) => v.project_id === p.id).length ?? 0, user_voted: false,
-        }))
-        setProjects(enriched as Project[])
-      }
-      if (tasksData) setTasks(tasksData as Task[])
       setLoading(false)
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user && !session.user.is_anonymous) {
-        init()
-      }
     })
+
+    async function loadData() {
+      const { data: weeksData } = await supabase.from('weeks').select('*').order('number')
+      if (weeksData) setWeeks(weeksData as Week[])
+    }
+    loadData()
+
     return () => subscription.unsubscribe()
   }, [])
 

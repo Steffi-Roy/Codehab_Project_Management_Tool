@@ -19,31 +19,21 @@ export default function MembersPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && !user.is_anonymous) {
-        const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user && !session.user.is_anonymous) {
+        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single()
         if (profile) setCurrentUser(profile as User)
-        else {
-          const { data: newProfile } = await supabase.from('users').insert({
-            id: user.id, email: user.email,
-            display_name: user.user_metadata?.full_name || user.user_metadata?.user_name || user.email?.split('@')[0] || 'Builder',
-          }).select().single()
-          if (newProfile) setCurrentUser(newProfile as User)
-        }
+      } else {
+        setCurrentUser(null)
       }
+    })
 
+    async function loadData() {
       const { data } = await supabase.from('users').select('*').order('created_at')
       if (data) setMembers(data as User[])
     }
-    init()
+    loadData()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && !session.user.is_anonymous) {
-        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single()
-        if (profile) setCurrentUser(profile as User)
-      }
-    })
     return () => subscription.unsubscribe()
   }, [])
 

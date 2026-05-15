@@ -51,34 +51,25 @@ export default function SchedulePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.is_anonymous) return
-
-      const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single()
-      if (profile) setCurrentUser(profile as User)
-      else {
-        const { data: newProfile } = await supabase.from('users').insert({
-          id: user.id, email: user.email,
-          display_name: user.user_metadata?.full_name || user.user_metadata?.user_name || user.email?.split('@')[0] || 'Builder',
-        }).select().single()
-        if (newProfile) setCurrentUser(newProfile as User)
-      }
-
-      const [{ data: weeksData }, { data: tasksData }] = await Promise.all([
-        supabase.from('weeks').select('*').order('number'),
-        supabase.from('tasks').select('*').eq('user_id', user.id).order('created_at'),
-      ])
-      if (weeksData) setWeeks(weeksData as Week[])
-      if (tasksData) setTasks(tasksData as TaskWithWeek[])
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && !session.user.is_anonymous) {
-        init()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user && !session.user.is_anonymous) {
+        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single()
+        if (profile) {
+          setCurrentUser(profile as User)
+          const { data: tasksData } = await supabase.from('tasks').select('*').eq('user_id', session.user.id).order('created_at')
+          if (tasksData) setTasks(tasksData as TaskWithWeek[])
+        }
+      } else {
+        setCurrentUser(null)
       }
     })
+
+    async function loadData() {
+      const { data: weeksData } = await supabase.from('weeks').select('*').order('number')
+      if (weeksData) setWeeks(weeksData as Week[])
+    }
+    loadData()
+
     return () => subscription.unsubscribe()
   }, [])
 
