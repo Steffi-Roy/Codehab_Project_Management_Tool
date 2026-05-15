@@ -113,17 +113,23 @@ export default function SubmitPage() {
     setSubmitting(true)
     setError('')
 
-    const tag = tags[0] || 'Other'
-    const { error: insertError } = await supabase.from('projects').insert({
-      user_id: currentUser.id,
-      week_id: activeWeek.id,
-      title, description, cover_image_url: coverImageUrl || null,
-      github_url: githubUrl, video_url: videoUrl || null,
-      tag, collab_open: false, consider_for_voting: considerForVoting,
-    }).select().single()
+    try {
+      const tag = tags[0] || 'Other'
+      const { error: insertError } = await supabase.from('projects').insert({
+        user_id: currentUser.id,
+        week_id: activeWeek.id,
+        title, description, cover_image_url: coverImageUrl || null,
+        github_url: githubUrl, video_url: videoUrl || null,
+        tag, collab_open: false, consider_for_voting: considerForVoting,
+      }).select().single()
 
-    if (insertError) { setError(insertError.message); setSubmitting(false); return }
-    setSubmittedTitle(title)
+      if (insertError) { setError(insertError.message || 'Submission failed. Please try again.'); return }
+      setSubmittedTitle(title)
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const previewProject: Project = {

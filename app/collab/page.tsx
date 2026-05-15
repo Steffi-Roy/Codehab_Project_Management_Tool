@@ -197,24 +197,29 @@ export default function CollabPage() {
     if (!currentUser) { setShowEmailPrompt(true); return }
     setSubmitting(true)
     setFormError('')
-    const { data, error: insertError } = await supabase.from('collab_listings').insert({
-      user_id: currentUser.id,
-      title: formTitle,
-      description: formDesc,
-      skills_offered: formSkillsOffered,
-      looking_for: formLookingFor,
-      github_url: formGithub || null,
-      linkedin_url: formLinkedin || null,
-    }).select('*, users(*), listing_replies(*, users(*))').single()
+    try {
+      const { data, error: insertError } = await supabase.from('collab_listings').insert({
+        user_id: currentUser.id,
+        title: formTitle,
+        description: formDesc,
+        skills_offered: formSkillsOffered,
+        looking_for: formLookingFor,
+        github_url: formGithub || null,
+        linkedin_url: formLinkedin || null,
+      }).select('*, users(*), listing_replies(*, users(*))').single()
 
-    if (insertError) { setFormError(insertError.message); setSubmitting(false); return }
-    if (data) {
-      setListings((prev) => [data as CollabListing, ...prev])
-      setShowForm(false)
-      setFormTitle(''); setFormDesc(''); setFormSkillsOffered([]); setFormLookingFor([])
-      setFormGithub(''); setFormLinkedin('')
+      if (insertError) { setFormError(insertError.message || 'Failed to post. Please try again.'); return }
+      if (data) {
+        setListings((prev) => [data as CollabListing, ...prev])
+        setShowForm(false)
+        setFormTitle(''); setFormDesc(''); setFormSkillsOffered([]); setFormLookingFor([])
+        setFormGithub(''); setFormLinkedin('')
+      }
+    } catch {
+      setFormError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   async function closeListing(id: string) {

@@ -100,25 +100,31 @@ function AddProjectModal({
     setSubmitting(true)
     setError('')
 
-    const { data, error: insertError } = await supabase
-      .from('projects')
-      .insert({
-        user_id: currentUser.id,
-        week_id: activeWeek.id,
-        title,
-        description,
-        cover_image_url: coverImageUrl || null,
-        github_url: githubUrl,
-        video_url: videoUrl || null,
-        tag: tags[0] || 'Other',
-        collab_open: false,
-        consider_for_voting: considerForVoting,
-      })
-      .select('*, users(*), weeks(*)')
-      .single()
+    try {
+      const { data, error: insertError } = await supabase
+        .from('projects')
+        .insert({
+          user_id: currentUser.id,
+          week_id: activeWeek.id,
+          title,
+          description,
+          cover_image_url: coverImageUrl || null,
+          github_url: githubUrl,
+          video_url: videoUrl || null,
+          tag: tags[0] || 'Other',
+          collab_open: false,
+          consider_for_voting: considerForVoting,
+        })
+        .select('*, users(*), weeks(*)')
+        .single()
 
-    if (insertError) { setError(insertError.message); setSubmitting(false); return }
-    setSubmittedProject(data as Project)
+      if (insertError) { setError(insertError.message || 'Submission failed. Please try again.'); return }
+      setSubmittedProject(data as Project)
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submittedProject) {
