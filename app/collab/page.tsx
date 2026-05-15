@@ -9,7 +9,7 @@ import TagInput from '@/components/TagInput'
 import { createClient } from '@/lib/supabase/client'
 import { User, CollabListing, ListingReply } from '@/types'
 
-const SKILL_SUGGESTIONS = ['Designer', 'Developer', 'Marketer', 'No-code', 'AI/ML', 'Product', 'Copywriter', 'Data', 'DevOps']
+const SKILL_SUGGESTIONS = ['Designer', 'Developer', 'Marketer', 'Vibe code', 'AI/ML', 'Product', 'Copywriter', 'Data', 'DevOps']
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
