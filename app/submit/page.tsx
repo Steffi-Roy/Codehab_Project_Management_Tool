@@ -39,6 +39,13 @@ export default function SubmitPage() {
       if (user && !user.is_anonymous) {
         const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single()
         if (profile) setCurrentUser(profile as User)
+        else {
+          const { data: newProfile } = await supabase.from('users').insert({
+            id: user.id, email: user.email,
+            display_name: user.user_metadata?.full_name || user.user_metadata?.user_name || user.email?.split('@')[0] || 'Builder',
+          }).select().single()
+          if (newProfile) setCurrentUser(newProfile as User)
+        }
       }
 
       const { data: weeksData } = await supabase.from('weeks').select('*').order('number')
@@ -47,13 +54,13 @@ export default function SubmitPage() {
     init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user && !session.user.is_anonymous) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && !session.user.is_anonymous) {
         const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single()
         if (profile) setCurrentUser(profile as User)
         else {
           const { data: newProfile } = await supabase.from('users').insert({
             id: session.user.id, email: session.user.email,
-            display_name: session.user.email?.split('@')[0] || 'Builder',
+            display_name: session.user.user_metadata?.full_name || session.user.user_metadata?.user_name || session.user.email?.split('@')[0] || 'Builder',
           }).select().single()
           if (newProfile) setCurrentUser(newProfile as User)
         }
