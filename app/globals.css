@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Theme variables ───────────────────────────────── */
+
+[data-theme="light"] {
+  --bg-page: #FAFAF8;
+  --bg-card: #FFFFFF;
+  --bg-surface: #F1EFE8;
+  --border: #E8E6DF;
+  --text-primary: #1A1A18;
+  --text-secondary: #5F5E5A;
+  --text-muted: #888780;
+  --accent-bg: #EEEDFE;
+  --accent-text: #3C3489;
+  --accent-border: #AFA9EC;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="dawn"] {
+  --bg-page: #FDF8F4;
+  --bg-card: #FFF9F6;
+  --bg-surface: #F5EDE5;
+  --border: #F0E6DD;
+  --text-primary: #1A1A18;
+  --text-secondary: #888780;
+  --text-muted: #B4B2A9;
+  --accent-bg: #FAECE7;
+  --accent-text: #712B13;
+  --accent-border: #F0997B;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme="dark"] {
+  --bg-page: #141210;
+  --bg-card: #1E1C19;
+  --bg-surface: #1A1814;
+  --border: #2C2A27;
+  --text-primary: #F1EFE8;
+  --text-secondary: #888780;
+  --text-muted: #444441;
+  --accent-bg: #26215C;
+  --accent-text: #CECBF6;
+  --accent-border: #534AB7;
+}
+
+/* ── Base styles ───────────────────────────────────── */
+
+html {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* ── Utility ───────────────────────────────────────── */
+
+.line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+/* ── Theme-aware component tokens ─────────────────── */
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.surface {
+  background-color: var(--bg-surface);
+}
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
