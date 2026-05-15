@@ -16,6 +16,7 @@ export default function CalendarSidebar({ weeks, userId, onAuthRequired }: Calen
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTask, setNewTask] = useState('')
+  const [taskError, setTaskError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -55,7 +56,9 @@ export default function CalendarSidebar({ weeks, userId, onAuthRequired }: Calen
     e.preventDefault()
     if (!userId) { onAuthRequired?.(); return }
     if (!newTask.trim()) return
-    const { data } = await supabase.from('tasks').insert({ user_id: userId, text: newTask.trim() }).select().single()
+    setTaskError('')
+    const { data, error } = await supabase.from('tasks').insert({ user_id: userId, text: newTask.trim() }).select().single()
+    if (error) { setTaskError(error.message); return }
     if (data) { setTasks((prev) => [...prev, data as Task]); setNewTask('') }
   }
 
@@ -161,6 +164,7 @@ export default function CalendarSidebar({ weeks, userId, onAuthRequired }: Calen
       {/* Tasks */}
       <div className="rounded-2xl p-4" style={{ backgroundColor: 'var(--bg-card)', border: '0.5px solid var(--border)' }}>
         <h3 className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>My Tasks</h3>
+        {taskError && <p className="text-xs mb-2" style={{ color: '#ED93B1' }}>{taskError}</p>}
         <form onSubmit={addTask} className="flex gap-1 mb-3">
           <input
             value={newTask}

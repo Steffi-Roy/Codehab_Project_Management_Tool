@@ -106,6 +106,7 @@ export default function SubmitPage() {
     e.preventDefault()
     if (!currentUser) { setShowEmailPrompt(true); return }
     if (!activeWeek) { setError('No active week found'); return }
+    if (!coverImageUrl) { setError('Please add a cover image'); return }
     if (!githubUrl.includes('github.com')) { setError('Please enter a valid GitHub URL'); return }
 
     setSubmitting(true)
@@ -115,7 +116,7 @@ export default function SubmitPage() {
     const { error: insertError } = await supabase.from('projects').insert({
       user_id: currentUser.id,
       week_id: activeWeek.id,
-      title, description, cover_image_url: coverImageUrl || null,
+      title, description, cover_image_url: coverImageUrl,
       github_url: githubUrl, video_url: videoUrl || null,
       tag, collab_open: collabOpen,
     }).select().single()
@@ -187,7 +188,7 @@ export default function SubmitPage() {
 
             {/* Cover image */}
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cover image</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cover image *</label>
               <div className="flex gap-2 mb-3">
                 {(['upload', 'ai'] as const).map((t) => (
                   <button key={t} type="button" onClick={() => setCoverTab(t)}

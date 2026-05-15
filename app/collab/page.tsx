@@ -158,6 +158,7 @@ export default function CollabPage() {
   const [formGithub, setFormGithub] = useState('')
   const [formLinkedin, setFormLinkedin] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
 
   const supabase = createClient()
 
@@ -194,9 +195,10 @@ export default function CollabPage() {
 
   async function handlePost(e: React.FormEvent) {
     e.preventDefault()
-    if (!currentUser) return
+    if (!currentUser) { setShowEmailPrompt(true); return }
     setSubmitting(true)
-    const { data } = await supabase.from('collab_listings').insert({
+    setFormError('')
+    const { data, error: insertError } = await supabase.from('collab_listings').insert({
       user_id: currentUser.id,
       title: formTitle,
       description: formDesc,
@@ -206,6 +208,7 @@ export default function CollabPage() {
       linkedin_url: formLinkedin || null,
     }).select('*, users(*), listing_replies(*, users(*))').single()
 
+    if (insertError) { setFormError(insertError.message); setSubmitting(false); return }
     if (data) {
       setListings((prev) => [data as CollabListing, ...prev])
       setShowForm(false)
@@ -302,6 +305,8 @@ export default function CollabPage() {
                 className="px-3 py-2 rounded-xl text-sm focus:outline-none"
                 style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }} />
             </div>
+
+            {formError && <p className="text-xs" style={{ color: '#ED93B1' }}>{formError}</p>}
 
             <div className="flex gap-3">
               <button type="submit" disabled={submitting} className="px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50" style={{ backgroundColor: '#085041', color: '#E1F5EE' }}>
