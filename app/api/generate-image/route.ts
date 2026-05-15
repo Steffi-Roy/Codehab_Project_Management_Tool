@@ -5,7 +5,9 @@ export async function POST(req: NextRequest) {
     const { title, description } = await req.json()
     if (!title) return NextResponse.json({ error: 'Missing title' }, { status: 400 })
 
-    const prompt = `Minimal flat abstract cover art for a project called '${title}': ${description}. Warm colours, geometric shapes, no text.`
+    const prompt = description
+      ? `Abstract cover art for a software project. Project name: "${title}". What it does: ${description}. Style: flat design, geometric shapes, warm accent colours, no text, no logos.`
+      : `Abstract flat cover art for a project called "${title}". Geometric shapes, warm accent colours, no text.`
 
     const response = await fetch('https://fal.run/fal-ai/fast-sdxl', {
       method: 'POST',

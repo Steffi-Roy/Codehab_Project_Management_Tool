@@ -156,9 +156,20 @@ export default function SubmitPage() {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Description *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Description *</label>
+                <span className="text-xs" style={{ color: description.trim().split(/\s+/).filter(Boolean).length > 190 ? '#ED93B1' : 'var(--text-muted)' }}>
+                  {description.trim().split(/\s+/).filter(Boolean).length} / 200 words
+                </span>
+              </div>
               <textarea
-                value={description} onChange={(e) => setDescription(e.target.value)} required
+                value={description}
+                onChange={(e) => {
+                  const words = e.target.value.trim().split(/\s+/).filter(Boolean)
+                  if (words.length <= 200) setDescription(e.target.value)
+                  else setDescription(words.slice(0, 200).join(' '))
+                }}
+                required
                 rows={4} placeholder="What did you build this week?"
                 className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none resize-none"
                 style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
