@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase/client'
 import { User, CollabListing, ListingReply } from '@/types'
 
 const SKILL_SUGGESTIONS = ['Designer', 'Developer', 'Marketer', 'No-code', 'AI/ML', 'Product', 'Copywriter', 'Data', 'DevOps']
-const FILTERS = ['All', 'Designer', 'Developer', 'Marketer', 'No-code', 'AI/ML', 'Product']
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -223,6 +222,14 @@ export default function CollabPage() {
     setListings((prev) => prev.filter((l) => l.id !== id))
   }
 
+  const skillCounts: Record<string, number> = {}
+  for (const l of listings) {
+    for (const s of l.looking_for) {
+      skillCounts[s] = (skillCounts[s] ?? 0) + 1
+    }
+  }
+  const dynamicFilters = ['All', ...Object.entries(skillCounts).filter(([, n]) => n >= 2).map(([s]) => s).sort()]
+
   const filtered = listings.filter((l) =>
     filter === 'All' || l.looking_for.includes(filter)
   )
@@ -319,19 +326,21 @@ export default function CollabPage() {
           </form>
         )}
 
-        {/* Filter chips */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {FILTERS.map((f) => (
-            <button key={f} onClick={() => setFilter(f)}
-              className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
-              style={filter === f
-                ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '0.5px solid var(--accent-border)' }
-                : { backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '0.5px solid var(--border)' }
-              }>
-              {f}
-            </button>
-          ))}
-        </div>
+        {/* Filter chips — only shown when 2+ listings share a looking_for skill */}
+        {dynamicFilters.length > 1 && (
+          <div className="flex gap-2 mb-6 flex-wrap">
+            {dynamicFilters.map((f) => (
+              <button key={f} onClick={() => setFilter(f)}
+                className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
+                style={filter === f
+                  ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '0.5px solid var(--accent-border)' }
+                  : { backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '0.5px solid var(--border)' }
+                }>
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Listings */}
         <div className="space-y-4">

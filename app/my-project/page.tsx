@@ -9,7 +9,7 @@ import ProjectCard from '@/components/ProjectCard'
 import TagInput from '@/components/TagInput'
 import SubmitSuccess from '@/components/SubmitSuccess'
 import { createClient } from '@/lib/supabase/client'
-import { User, Project, Week, Task } from '@/types'
+import { User, Project, Week } from '@/types'
 
 const TAG_SUGGESTIONS = ['Tool', 'Community', 'Design', 'AI', 'Mobile', 'API', 'Open source', 'SaaS']
 
@@ -467,9 +467,6 @@ export default function MyProjectPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [weeks, setWeeks] = useState<Week[]>([])
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [newTask, setNewTask] = useState('')
-  const [taskError, setTaskError] = useState('')
   const [showEmailPrompt, setShowEmailPrompt] = useState(false)
   const [showAddProject, setShowAddProject] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
@@ -483,10 +480,8 @@ export default function MyProjectPage() {
         if (profile) {
           setCurrentUser(profile as User)
 
-          const [{ data: projectsData }, { data: tasksData }] = await Promise.all([
-            supabase.from('projects').select('*, users(*), weeks(*)').eq('user_id', session.user.id).order('created_at', { ascending: false }),
-            supabase.from('tasks').select('*').eq('user_id', session.user.id).order('created_at'),
-          ])
+          const { data: projectsData } = await supabase
+            .from('projects').select('*, users(*), weeks(*)').eq('user_id', session.user.id).order('created_at', { ascending: false })
 
           if (projectsData) {
             const ids = projectsData.map((p: Project) => p.id)
@@ -498,7 +493,6 @@ export default function MyProjectPage() {
             }))
             setProjects(enriched as Project[])
           }
-          if (tasksData) setTasks(tasksData as Task[])
         }
       } else {
         setCurrentUser(null)
@@ -520,35 +514,7 @@ export default function MyProjectPage() {
     return week ? new Date() < new Date(week.submission_deadline) : false
   }
 
-  async function addTask(e: React.FormEvent) {
-    e.preventDefault()
-    if (!currentUser) return
-    const text = newTask.trim()
-    if (!text) return
-    setTaskError('')
 
-    const optimistic: Task = { id: `opt-${Date.now()}`, user_id: currentUser.id, text, is_done: false, created_at: new Date().toISOString() }
-    setTasks((prev) => [...prev, optimistic])
-    setNewTask('')
-
-    const { data, error } = await supabase.from('tasks').insert({ user_id: currentUser.id, text }).select().single()
-    if (error || !data) {
-      setTasks((prev) => prev.filter((t) => t.id !== optimistic.id))
-      setTaskError("Couldn't save — try again")
-    } else {
-      setTasks((prev) => prev.map((t) => t.id === optimistic.id ? data as Task : t))
-    }
-  }
-
-  async function toggleTask(task: Task) {
-    await supabase.from('tasks').update({ is_done: !task.is_done }).eq('id', task.id)
-    setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, is_done: !t.is_done } : t))
-  }
-
-  async function deleteTask(id: string) {
-    await supabase.from('tasks').delete().eq('id', id)
-    setTasks((prev) => prev.filter((t) => t.id !== id))
-  }
 
   async function deleteProject(id: string) {
     await supabase.from('projects').delete().eq('id', id)
@@ -692,45 +658,6 @@ export default function MyProjectPage() {
           </div>
         </div>
 
-        {/* Tasks */}
-        <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--bg-card)', border: '0.5px solid var(--border)' }}>
-          <h2 className="text-[22px] font-semibold mb-5" style={{ color: 'var(--text-primary)' }}>My Tasks</h2>
-          <form onSubmit={addTask} className="flex gap-2 mb-5">
-            <input
-              value={newTask} onChange={(e) => setNewTask(e.target.value)}
-              placeholder="Add a task…"
-              className="flex-1 text-sm px-4 py-2.5 rounded-xl focus:outline-none"
-              style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '0.5px solid var(--border)' }}
-            />
-            <button type="submit" className="p-2.5 rounded-xl" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-              <Plus size={16} />
-            </button>
-          </form>
-          {taskError && <p className="text-xs mb-3" style={{ color: '#ED93B1' }}>{taskError}</p>}
-
-          <div className="space-y-2">
-            {tasks.map((task) => (
-              <div key={task.id} className="flex items-center gap-3 group">
-                <button
-                  onClick={() => toggleTask(task)}
-                  className="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
-                  style={task.is_done ? { backgroundColor: '#5DCAA5', borderColor: '#5DCAA5' } : { borderColor: 'var(--border)' }}
-                >
-                  {task.is_done && <Check size={10} color="white" />}
-                </button>
-                <span className="text-sm flex-1" style={{ color: task.is_done ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.is_done ? 'line-through' : 'none' }}>
-                  {task.text}
-                </span>
-                <button onClick={() => deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Trash2 size={12} style={{ color: 'var(--text-muted)' }} />
-                </button>
-              </div>
-            ))}
-            {tasks.length === 0 && (
-              <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>No tasks yet — add one above</p>
-            )}
-          </div>
-        </div>
       </main>
 
       {showAddProject && activeWeek && (

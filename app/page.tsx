@@ -12,7 +12,6 @@ import { createClient } from '@/lib/supabase/client'
 import { shuffleArray, getCountdown, formatDeadline } from '@/lib/utils'
 import { Project, Week, User } from '@/types'
 
-const TAGS = ['All', 'Tool', 'Design', 'Community', 'Collab open']
 
 function weekStatus(week: Week): 'past' | 'active' | 'future' {
   const now = new Date()
@@ -99,11 +98,13 @@ export default function HomePage() {
     return () => { supabase.removeChannel(channel) }
   }, [activeWeekId, currentUser?.id])
 
-  const filtered = shuffled.filter((p) => {
-    if (tag === 'All') return true
-    if (tag === 'Collab open') return p.collab_open
-    return p.tag === tag
-  })
+  const tagCounts: Record<string, number> = {}
+  for (const p of projects) {
+    if (p.tag) tagCounts[p.tag] = (tagCounts[p.tag] ?? 0) + 1
+  }
+  const dynamicTags = ['All', ...Object.entries(tagCounts).filter(([, n]) => n >= 2).map(([t]) => t).sort()]
+
+  const filtered = shuffled.filter((p) => tag === 'All' || p.tag === tag)
 
   const selectedWeek = weeks.find((w) => w.id === activeWeekId)
   const now = new Date()
@@ -184,23 +185,25 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Filter chips */}
-          <div className="flex gap-2 mb-4 flex-wrap">
-            {TAGS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTag(t)}
-                className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
-                style={
-                  tag === t
-                    ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '0.5px solid var(--accent-border)' }
-                    : { backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '0.5px solid var(--border)' }
-                }
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          {/* Filter chips — only shown when 2+ projects share a tag */}
+          {dynamicTags.length > 1 && (
+            <div className="flex gap-2 mb-4 flex-wrap">
+              {dynamicTags.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTag(t)}
+                  className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors"
+                  style={
+                    tag === t
+                      ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)', border: '0.5px solid var(--accent-border)' }
+                      : { backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '0.5px solid var(--border)' }
+                  }
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Card grid */}
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>

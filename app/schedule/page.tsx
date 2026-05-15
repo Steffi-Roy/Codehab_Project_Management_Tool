@@ -30,14 +30,8 @@ function isWithin48h(dateStr?: string) {
   return diff > 0 && diff < 172800000
 }
 
-function isOverdue(dateStr?: string) {
-  if (!dateStr) return false
-  return new Date(dateStr) < new Date()
-}
-
 function barColor(task: TaskWithWeek) {
   if (task.is_done) return '#5DCAA5'
-  if (isOverdue(task.due_date)) return '#ED93B1'
   if (isWithin48h(task.due_date)) return '#EF9F27'
   return '#AFA9EC'
 }
@@ -133,7 +127,6 @@ export default function SchedulePage() {
 
   const totalTasks = tasks.length
   const doneTasks = tasks.filter((t) => t.is_done).length
-  const overdueTasks = tasks.filter((t) => !t.is_done && isOverdue(t.due_date)).length
 
   if (!currentUser) return (
     <>
@@ -164,7 +157,6 @@ export default function SchedulePage() {
               {totalTasks > 0 && (
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                   {doneTasks}/{totalTasks} done
-                  {overdueTasks > 0 && <span style={{ color: '#ED93B1' }}> · {overdueTasks} overdue</span>}
                 </p>
               )}
             </div>
@@ -262,7 +254,6 @@ export default function SchedulePage() {
                       <div className="px-5 pb-4 pt-3">
                         <div className="space-y-1.5 mb-3">
                           {wTasks.map((task) => {
-                            const overdue = isOverdue(task.due_date) && !task.is_done
                             const soon = isWithin48h(task.due_date) && !task.is_done
                             return (
                               <div key={task.id} className="flex items-center gap-2.5 group py-0.5">
@@ -278,13 +269,12 @@ export default function SchedulePage() {
                                 <span
                                   className="text-sm flex-1"
                                   style={{
-                                    color: task.is_done ? 'var(--text-muted)' : overdue ? '#ED93B1' : soon ? '#EF9F27' : 'var(--text-primary)',
+                                    color: task.is_done ? 'var(--text-muted)' : soon ? '#EF9F27' : 'var(--text-primary)',
                                     textDecoration: task.is_done ? 'line-through' : 'none',
                                   }}
                                 >
                                   {task.text}
                                 </span>
-                                {overdue && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#FDE8EC', color: '#85212A' }}>overdue</span>}
                                 {soon && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#FAEEDA', color: '#633806' }}>due soon</span>}
                                 <button
                                   onClick={() => deleteTask(task.id)}
@@ -354,7 +344,7 @@ export default function SchedulePage() {
                                 />
                               </div>
                               <span className="text-xs w-16 text-right flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
-                                {task.is_done ? '✓ done' : isOverdue(task.due_date) ? 'overdue' : isWithin48h(task.due_date) ? 'due soon' : `Wk ${week.number}`}
+                                {task.is_done ? '✓ done' : isWithin48h(task.due_date) ? 'due soon' : `Wk ${week.number}`}
                               </span>
                             </div>
                           ))}
@@ -364,7 +354,7 @@ export default function SchedulePage() {
                   </div>
 
                   <div className="flex gap-4 mt-5 pt-4 flex-wrap" style={{ borderTop: '0.5px solid var(--border)' }}>
-                    {[['#5DCAA5', 'Done'], ['#AFA9EC', 'In progress'], ['#EF9F27', 'Due soon'], ['#ED93B1', 'Overdue']].map(([color, label]) => (
+                    {[['#5DCAA5', 'Done'], ['#AFA9EC', 'In progress'], ['#EF9F27', 'Due soon']].map(([color, label]) => (
                       <span key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
                         {label}
