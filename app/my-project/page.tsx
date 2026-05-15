@@ -415,8 +415,7 @@ export default function MyProjectPage() {
   )
 
   const activeWeek = weeks.find((w) => w.is_active) ?? weeks[weeks.length - 1]
-  const hasSubmittedThisWeek = activeWeek ? projects.some((p) => p.week_id === activeWeek.id) : false
-  const isSubmissionOpen = activeWeek ? new Date() < new Date(activeWeek.submission_deadline) : false
+  const votingOpen = activeWeek ? new Date() < new Date(activeWeek.voting_close) : false
 
   const projectsByWeek = weeks.map((w) => ({
     week: w,
@@ -432,7 +431,7 @@ export default function MyProjectPage() {
         {/* Page header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-[22px] font-semibold" style={{ color: 'var(--text-primary)' }}>My Projects</h1>
-          {isSubmissionOpen && !hasSubmittedThisWeek && activeWeek && (
+          {votingOpen && activeWeek && (
             <button
               onClick={() => setShowAddProject(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
@@ -444,7 +443,7 @@ export default function MyProjectPage() {
         </div>
 
         {/* Submit CTA when no submission */}
-        {isSubmissionOpen && !hasSubmittedThisWeek && activeWeek && (
+        {votingOpen && activeWeek && (
           <div className="rounded-2xl p-7 mb-8 text-center" style={{ backgroundColor: '#E1F5EE', border: '0.5px solid #5DCAA5' }}>
             <p className="text-3xl mb-3">🌱</p>
             <h2 className="text-lg font-semibold mb-1" style={{ color: '#085041' }}>You haven't submitted yet this week</h2>
