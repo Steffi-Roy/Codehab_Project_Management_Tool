@@ -9,17 +9,21 @@ export default function AuthCallbackPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const code = params.get('code')
-    const next = params.get('next') ?? '/'
+    const next = new URLSearchParams(window.location.search).get('next') ?? '/'
 
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        router.replace(error ? '/?error=auth' : next)
-      })
-    } else {
-      router.replace('/')
-    }
+    // The SDK auto-exchanges the PKCE code on init via detectSessionInUrl.
+    // Just wait for the session to land.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        subscription.unsubscribe()
+        router.replace(next)
+      } else if (event === 'INITIAL_SESSION' && !session) {
+        subscription.unsubscribe()
+        router.replace('/?error=auth')
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   return (
