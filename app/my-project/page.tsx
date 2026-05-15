@@ -422,6 +422,11 @@ export default function MyProjectPage() {
     setTasks((prev) => prev.filter((t) => t.id !== id))
   }
 
+  async function deleteProject(id: string) {
+    await supabase.from('projects').delete().eq('id', id)
+    setProjects((prev) => prev.filter((p) => p.id !== id))
+  }
+
   if (loading) return (
     <>
       <Navbar user={null} />
@@ -524,15 +529,24 @@ export default function MyProjectPage() {
                 <div className="flex-1 pb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-medium text-sm" style={{ color: 'var(--text-secondary)' }}>{week.theme}</h3>
-                    {isEditable(project) && (
+                    <div className="flex items-center gap-2">
+                      {isEditable(project) && (
+                        <button
+                          onClick={() => router.push(`/submit?edit=${project.id}`)}
+                          className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+                          style={{ color: 'var(--accent-text)', backgroundColor: 'var(--accent-bg)' }}
+                        >
+                          <Edit2 size={12} /> Edit
+                        </button>
+                      )}
                       <button
-                        onClick={() => router.push(`/submit?edit=${project.id}`)}
+                        onClick={() => { if (confirm('Delete this project?')) deleteProject(project.id) }}
                         className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
-                        style={{ color: 'var(--accent-text)', backgroundColor: 'var(--accent-bg)' }}
+                        style={{ color: '#ED93B1', backgroundColor: 'var(--bg-surface)' }}
                       >
-                        <Edit2 size={12} /> Edit
+                        <Trash2 size={12} /> Delete
                       </button>
-                    )}
+                    </div>
                   </div>
                   <div className="max-w-xs">
                     <ProjectCard project={project} currentUserId={currentUser?.id} />

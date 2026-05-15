@@ -72,11 +72,11 @@ function ListingCard({
         </div>
         {isOwner && (
           <button
-            onClick={() => onClose(listing.id)}
+            onClick={() => { if (confirm('Delete this listing?')) onClose(listing.id) }}
             className="text-xs px-2 py-1 rounded-lg transition-colors"
-            style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
+            style={{ color: '#ED93B1', backgroundColor: 'var(--bg-surface)' }}
           >
-            Close listing
+            Delete
           </button>
         )}
       </div>
@@ -219,7 +219,7 @@ export default function CollabPage() {
   }
 
   async function closeListing(id: string) {
-    await supabase.from('collab_listings').update({ is_active: false }).eq('id', id)
+    await supabase.from('collab_listings').delete().eq('id', id)
     setListings((prev) => prev.filter((l) => l.id !== id))
   }
 
